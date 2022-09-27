@@ -38,9 +38,11 @@
         #region Internal Methods
 
         internal void LoadViews(Action action)
-        {
-            this.host.WorkAsync("Loading views...",
-                (a) =>
+        {               
+            WorkAsyncInfo info = new WorkAsyncInfo
+            {
+                Message = "Loading views...",
+                Work = (a, e) =>
                 {
                     this.views = new Dictionary<string, List<Entity>>();
 
@@ -66,10 +68,11 @@
                             }
                         }
 
-                        a.Result = combinedResult;
+                        e.Result = combinedResult;
                     }
+
                 },
-                (a) =>
+                PostWorkCallBack = (a) =>
                 {
                     var allViews = (Dictionary<string, DataCollection<Entity>>)a.Result;
 
@@ -81,7 +84,9 @@
                     this.entities = this.views.Keys.Select(x => x.Split('|')[0]).Distinct().ToList();
 
                     action();
-                });
+                }
+            };
+            this.host.WorkAsync(info);
         }
 
         #endregion Internal Methods

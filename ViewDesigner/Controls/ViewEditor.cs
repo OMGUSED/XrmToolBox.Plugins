@@ -257,7 +257,7 @@
                     var column = new ColumnHeader();
                     column.Name = definition.Attributes["name"].Value;
                     column.Text = definition.Attributes["name"].Value;
-                    column.Width = int.Parse(definition.Attributes["width"].Value);
+                    column.Width = int.Parse(definition.Attributes["width"]?.Value ?? "0");
                     column.Tag = definition;
                     if (!snapWidths.Contains(column.Width))
                     {

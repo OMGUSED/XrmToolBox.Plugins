@@ -8,7 +8,7 @@
     using XrmToolBox.Extensibility.Interfaces;
     using System.Reflection;
     using Forms;
-    using Xrm.FetchXmlBuilder;
+
     public partial class MainControl : PluginControlBase, IGitHubPlugin, IMessageBusHost, IHelpPlugin
     {
         #region Private Fields
@@ -84,10 +84,10 @@
         {
             if (message.SourcePlugin == "FetchXML Builder" &&
                 message.TargetArgument != null &&
-                message.TargetArgument is FXBMessageBusArgument)
+                message.TargetArgument is MessageBusEventArgs)
             {
-                var fxbArg = (FXBMessageBusArgument)message.TargetArgument;
-                UpdateFetch(fxbArg.FetchXML);
+                var fxbArg = (MessageBusEventArgs)message.TargetArgument;
+                UpdateFetch(fxbArg.TargetArgument.FetchXML);
             }
         }
 
@@ -115,13 +115,12 @@
             }
             try
             {
-                var messageBusEventArgs = new MessageBusEventArgs("FetchXML Builder");
-                var fXBMessageBusArgument = new FXBMessageBusArgument(FXBMessageBusRequest.FetchXML);
+                var messageBusEventArgs = new MessageBusEventArgs("FetchXML Builder");                
                 if (ViewEditor != null && ViewEditor.FetchXml != null && ViewEditor.FetchXml.OuterXml != null)
                 {
-                    fXBMessageBusArgument.FetchXML = ViewEditor.FetchXml.OuterXml;
+                    messageBusEventArgs.TargetArgument = ViewEditor.FetchXml.OuterXml;
                 }
-                messageBusEventArgs.TargetArgument = fXBMessageBusArgument;
+                
                 OnOutgoingMessage(this, messageBusEventArgs);
             }
             catch (System.IO.FileNotFoundException)
@@ -186,20 +185,23 @@
                 MessageBox.Show("First select a view to design.", "Publish", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            this.WorkAsync("Publishing changes",
-                a =>
+
+            WorkAsync(new WorkAsyncInfo {
+                Message = "Publishing changes",
+                Work = (a, f) => 
                 {
                     var pubRequest = new PublishXmlRequest();
                     pubRequest.ParameterXml = string.Format("<importexportxml><entities><entity>{0}</entity></entities><nodes/><securityroles/><settings/><workflows/></importexportxml>", entity);
                     this.Service.Execute(pubRequest);
                 },
-                a =>
+                PostWorkCallBack = a =>
                 {
                     if (a.Error != null)
                     {
                         MessageBox.Show(a.Error.Message, "Publish", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-                });
+                }
+            });
         }
 
         private void tsbSave_Click(object sender, EventArgs e)
@@ -215,18 +217,21 @@
                 MessageBox.Show("First select a view to design.", "Save", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            this.WorkAsync("Saving changes",
-                a =>
+            this.WorkAsync(new WorkAsyncInfo
+            {
+                Message = "Saving changes",
+                Work = (a, f) =>
                 {
                     this.Service.Update(view);
                 },
-                a =>
+                PostWorkCallBack = a =>
                 {
                     if (a.Error != null)
                     {
                         MessageBox.Show(a.Error.Message, "Save", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-                });
+                }
+            });
         }
 
         private void tsbSnap_Click(object sender, EventArgs e)
