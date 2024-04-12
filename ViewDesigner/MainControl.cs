@@ -83,11 +83,10 @@
         public void OnIncomingMessage(MessageBusEventArgs message)
         {
             if (message.SourcePlugin == "FetchXML Builder" &&
-                message.TargetArgument != null &&
-                message.TargetArgument is MessageBusEventArgs)
+                message is MessageBusEventArgs &&
+                message.TargetArgument != null)
             {
-                var fxbArg = (MessageBusEventArgs)message.TargetArgument;
-                UpdateFetch(fxbArg.TargetArgument.FetchXML);
+                UpdateFetch(message.TargetArgument);
             }
         }
 
